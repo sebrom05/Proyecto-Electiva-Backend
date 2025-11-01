@@ -1,0 +1,45 @@
+<?php
+require_once dirname(__DIR__, 2) . '/models/ActiveRecord.php';
+use Model\ActiveRecord;
+
+// Cargar variables desde el archivo .env
+function cargarEnv($ruta)
+{
+    if (!file_exists($ruta)) {
+        throw new Exception(".env no encontrado en $ruta");
+    }
+
+    $lineas = file($ruta, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lineas as $linea) {
+        if (strpos(trim($linea), '#') === 0) continue; // ignorar comentarios
+        list($nombre, $valor) = explode('=', $linea, 2);
+        $_ENV[trim($nombre)] = trim($valor);
+    }
+}
+
+function conectarDB()
+{
+    // Cargar las variables de entorno
+    cargarEnv(dirname(__DIR__, 2) . '/.env');
+
+    $servidor   = $_ENV['DB_HOST'];
+    $usuario    = $_ENV['DB_USER'];
+    $contrasena = $_ENV['DB_PASS'];
+    $dbname     = $_ENV['DB_NAME'];
+
+    try {
+        $conexion = new PDO("pgsql:host=$servidor;dbname=$dbname", $usuario, $contrasena);
+        $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $conexion->exec("SET search_path TO public;");
+        return $conexion;
+    } catch (PDOException $e) {
+        die("Error en la conexión: " . $e->getMessage());
+    }
+}
+
+// Crear la conexión y asignarla al ActiveRecord
+$conexion = conectarDB();
+ActiveRecord::setDB($conexion);
+
+// echo "✅ Conexión establecida correctamente";
+
