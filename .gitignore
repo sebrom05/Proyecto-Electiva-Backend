@@ -1,2 +1,5 @@
 # Archivos sensibles
 .env
+
+/vendor/
+/node_modules/
