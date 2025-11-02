@@ -1,5 +1,36 @@
 # Archivos sensibles
 .env
+*.env
 
+# Dependencias
 /vendor/
 /node_modules/
+
+# Archivos temporales o de logs
+*.log
+*.bak
+*.tmp
+
+# Configuraciones locales o del IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Archivos del sistema operativo
+*.swp
+*.swo
+
+# Archivos de respaldo o pruebas
+*.sql
+*.zip
+*.rar
+*.tar
+*.gz
+
+# Archivos de Composer (excepto composer.json y composer.lock)
+composer.phar
+
+# Copias de configuración locales
+config_local.php
+database_local.php
