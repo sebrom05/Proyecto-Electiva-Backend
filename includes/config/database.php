@@ -5,17 +5,20 @@ use Model\ActiveRecord;
 // Cargar variables desde el archivo .env
 function cargarEnv($ruta)
 {
-    if (!file_exists($ruta)) {
-        throw new Exception(".env no encontrado en $ruta");
-    }
-
+    if (!file_exists($ruta)) return;
     $lineas = file($ruta, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lineas as $linea) {
-        if (strpos(trim($linea), '#') === 0) continue; // ignorar comentarios
+        if (strpos(trim($linea), '#') === 0) continue;
         list($nombre, $valor) = explode('=', $linea, 2);
-        $_ENV[trim($nombre)] = trim($valor);
+        $nombre = trim($nombre);
+        $valor = trim($valor);
+        // 🔹 Esto asegura que todas las formas funcionen:
+        putenv("$nombre=$valor");
+        $_ENV[$nombre] = $valor;
+        $_SERVER[$nombre] = $valor;
     }
 }
+
 
 function conectarDB()
 {
