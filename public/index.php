@@ -1,19 +1,23 @@
 <?php
-// Permitir peticiones desde cualquier origen (CORS)
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json; charset=UTF-8");
+// ==============================================
+// 🔹 FRONT CONTROLLER – Redirige todo al Router
+// ==============================================
 
-// Definir la ruta base del proyecto
-define('BASE_PATH', dirname(__DIR__));
+// Habilita errores visibles (solo en desarrollo)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-//Incluir la conexión a la base de datos
-require_once BASE_PATH . '/includes/config/database.php';
+// Ruta al archivo Router.php
+$routerPath = dirname(__DIR__) . '/Router.php';
 
-// Obtener la URL solicitada
-$request = $_SERVER['REQUEST_URI'];
-$request = strtok($request, '?');
-
-// Llamar al router principal
-require_once BASE_PATH . '/Router.php';
+// Verifica que exista y lo carga
+if (file_exists($routerPath)) {
+    require_once $routerPath;
+} else {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Router.php no encontrado',
+        'path' => $routerPath
+    ]);
+}

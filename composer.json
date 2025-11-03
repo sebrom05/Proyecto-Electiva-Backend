@@ -2,9 +2,8 @@
     "name": "r05se/backend",
     "autoload": {
         "psr-4": {
-            "R05se\\Backend\\": "src/",
-            "R05se\\Backend\\Controllers\\": "controllers/",
-            "R05se\\Backend\\Models\\": "models/"
+            "Model\\": "models/",
+            "Controllers\\": "controllers/"
         }
     },
     "authors": [
