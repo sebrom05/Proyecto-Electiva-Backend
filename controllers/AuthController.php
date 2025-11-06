@@ -62,40 +62,58 @@ class AuthController
         $rol = $stmt->fetchColumn() ?: 'Desconocido';
 
         // 🔹 Si todo está bien: iniciar sesión
-        $_SESSION['id'] = $usuario->id;
-        $_SESSION['nombre'] = $usuario->nombre;
-        $_SESSION['email'] = $usuario->email;
-        $_SESSION['rol_id'] = $usuario->id_rol_usuario;
-        $_SESSION['rol_nombre'] = $rol;
-        $_SESSION['autenticado'] = true;
+        $_SESSION['usuario'] = [
+            'id' => $usuario->id,
+            'nombre' => $usuario->nombre,
+            'email' => $usuario->email,
+            'rol_id' => $usuario->id_rol_usuario,
+            'rol_nombre' => $rol,
+            'autenticado' => true
+        ];
+
 
         unset($usuario->contraseña);
 
         echo json_encode([
             'success' => true,
             'message' => 'Inicio de sesión exitoso',
-            'usuario' => [
-                'id' => $usuario->id,
-                'nombre' => $usuario->nombre,
-                'apellido' => $usuario->apellido,
-                'email' => $usuario->email,
-                'telefono' => $usuario->telefono,
-                'documento' => $usuario->documento,
-                'edad' => $usuario->edad,
-                'fecha_ingreso' => $usuario->fecha_ingreso,
-                'rol_id' => $usuario->id_rol_usuario,
-                'rol_nombre' => $rol
-            ]
+            'usuario' => $_SESSION['usuario']
         ]);
+
         exit;
     }
+
+    public static function verificarSesionApi()
+    {
+        require_once __DIR__ . '/../includes/cors.php';
+        session_start();
+
+        // ✅ Si existe sesión activa, devolvemos los datos del usuario
+        if (isset($_SESSION['usuario']) && !empty($_SESSION['usuario']['autenticado'])) {
+            echo json_encode([
+                'success' => true,
+                'usuario' => $_SESSION['usuario']
+            ]);
+        } else {
+            // ❌ No hay sesión activa
+            echo json_encode([
+                'success' => false,
+                'message' => 'No hay sesión activa'
+            ]);
+        }
+        exit;
+    }
+
 
     public static function logoutApi()
     {
         require_once __DIR__ . '/../includes/cors.php';
         session_start();
         $_SESSION = [];
-        session_destroy();
+        // 🔹 Destruir la sesión
+        if (session_id()) {
+            session_destroy();
+        }
 
         echo json_encode([
             'success' => true,
