@@ -26,6 +26,26 @@ if ($method === 'POST') {
     error_log("🔹 Contenido recibido: " . $data);
 }
 
+// 🔹 SERVIR IMÁGENES DIRECTAMENTE DESDE /imagenes
+// =============================================
+if (preg_match('#^/imagenes/(.+)$#', $uri, $matches)) {
+    $archivo = BASE_PATH . '/imagenes/' . basename($matches[1]);
+    
+    if (file_exists($archivo)) {
+        $tipo = mime_content_type($archivo);
+        header("Content-Type: $tipo");
+        readfile($archivo);
+        exit;
+    } else {
+        http_response_code(404);
+        echo json_encode([
+            'ok' => false,
+            'message' => 'Imagen no encontrada: ' . $archivo
+        ]);
+        exit;
+    }
+}
+
 // Incluir módulos de rutas
 require_once BASE_PATH . '/routes/auth.php';
 require_once BASE_PATH . '/routes/registro.php';

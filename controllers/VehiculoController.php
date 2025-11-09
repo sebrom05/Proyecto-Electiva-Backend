@@ -132,71 +132,66 @@ class VehiculoController
     public static function editarVehiculo()
     {
         error_log("🧠 Iniciando método editarVehiculo()");
-
-        error_log("🧩 Verificando roles y sesión...");
         verificarRolesPermitidosPorID([1, 3]); // Admin y Técnico
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            error_log("🚫 Método HTTP incorrecto: " . $_SERVER['REQUEST_METHOD']);
             http_response_code(405);
             echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
             exit;
         }
 
-        $rawData = file_get_contents('php://input');
-        error_log("📥 Datos recibidos RAW: " . $rawData);
-
-        $input = json_decode($rawData, true);
-        $id = $input['id'] ?? null;
-        error_log("🔍 ID recibido: " . var_export($id, true));
-
-
-        if (!$id) {
-            error_log("⚠️ ID de vehículo no proporcionado");
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'message' => 'ID de vehículo requerido']);
-            exit;
-        }
-
         try {
             $db = conectarDB();
-            error_log("✅ Conexión a BD establecida correctamente");
+
+            // 🔹 Imagen (opcional)
+            $id = $_POST['id'] ?? null;
+            $nombreImagen = null;
+
+            if (!empty($_FILES['imagen']['name'])) {
+                $nombreImagen = self::subirImagenVehiculo($_FILES['imagen'], $id);
+            }
+
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'ID de vehículo requerido']);
+                exit;
+            }
 
             $campos = [
-                'placa' => $input['placa'] ?? null,
-                'marca' => $input['marca'] ?? null,
-                'modelo' => $input['modelo'] ?? null,
-                'carroceria' => $input['carroceria'] ?? null,
-                'fecha_tecnomecanica' => $input['fecha_tecnomecanica'] ?? null
+                'id_usuario' => $_POST['id_usuario'] ?? null,
+                'id_tipo_vehiculo' => $_POST['id_tipo_vehiculo'] ?? null,
+                'placa' => $_POST['placa'] ?? null,
+                'marca' => $_POST['marca'] ?? null,
+                'modelo' => $_POST['modelo'] ?? null,
+                'carroceria' => $_POST['carroceria'] ?? null,
+                'fecha_tecnomecanica' => (!empty($_POST['fecha_tecnomecanica']) && $_POST['fecha_tecnomecanica'] !== 'null')
+                ? $_POST['fecha_tecnomecanica']
+                : null
+
             ];
-            error_log("📋 Campos recibidos: " . json_encode($campos));
+
+            if ($nombreImagen) {
+                $campos['imagen'] = $nombreImagen;
+            }
 
             $set = [];
-            $parametros = []; // 🔹 Nuevo array limpio
-
+            $params = [];
             foreach ($campos as $key => $value) {
                 if (!is_null($value)) {
                     $set[] = "$key = :$key";
-                    $parametros[$key] = $value; // solo agrega los que sí van
+                    $params[$key] = $value;
                 }
             }
 
             if (empty($set)) {
-                error_log("⚠️ No se enviaron campos válidos para actualizar");
                 echo json_encode(['ok' => false, 'message' => 'No hay campos para actualizar']);
                 exit;
             }
 
             $query = "UPDATE vehiculo SET " . implode(', ', $set) . " WHERE id = :id";
-            error_log("🧩 Query final: $query");
             $stmt = $db->prepare($query);
-
-            // 🔹 Añadimos el ID al array final
-            $parametros['id'] = $id;
-
-            error_log("📦 Parámetros que se enviarán: " . json_encode($parametros));
-
-            $stmt->execute($parametros);
+            $params['id'] = $id;
+            $stmt->execute($params);
 
             error_log("✅ Vehículo actualizado correctamente (ID: $id)");
             echo json_encode(['ok' => true, 'message' => 'Vehículo actualizado correctamente']);
@@ -210,4 +205,137 @@ class VehiculoController
             ]);
         }
     }
+
+
+   private static function subirImagenVehiculo($imagenArchivo, $idVehiculo = null)
+    {
+        try {
+            if (empty($imagenArchivo['name'])) {
+                error_log("📷 [subirImagenVehiculo] No se recibió imagen.");
+                return null;
+            }
+
+            // Si hay ID, eliminar imagen anterior
+            if ($idVehiculo) {
+                $db = conectarDB();
+                $stmt = $db->prepare("SELECT imagen FROM vehiculo WHERE id = :id");
+                $stmt->execute(['id' => $idVehiculo]);
+                $actual = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($actual && !empty($actual['imagen'])) {
+                    $rutaAntigua = CARPETA_IMAGENES . $actual['imagen'];
+                    if (file_exists($rutaAntigua)) {
+                        unlink($rutaAntigua);
+                        error_log("🗑️ Imagen anterior eliminada: " . $rutaAntigua);
+                    }
+                }
+            }
+
+            // Subir nueva imagen
+            $nombreImagen = uniqid('vehiculo_') . '_' . basename($imagenArchivo['name']);
+            $rutaDestino = CARPETA_IMAGENES . $nombreImagen;
+
+            if (!move_uploaded_file($imagenArchivo['tmp_name'], $rutaDestino)) {
+                throw new Exception("Error al mover el archivo a destino.");
+            }
+
+            error_log("✅ Imagen subida correctamente: " . $rutaDestino);
+            return $nombreImagen;
+
+        } catch (Exception $e) {
+            error_log("❌ [subirImagenVehiculo] " . $e->getMessage());
+            return null;
+        }
+    }
+
+
+
+    public static function crearVehiculo()
+    {
+        error_log("🚗 [crearVehiculo] Inicio");
+        verificarRolesPermitidosPorID([1, 3]); // Admin o técnico
+        error_log("✅ [crearVehiculo] Rol OK. Método: " . $_SERVER['REQUEST_METHOD']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log("⛔ [crearVehiculo] Método no permitido: " . $_SERVER['REQUEST_METHOD']);
+            http_response_code(405);
+            echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
+            
+            exit;
+        }
+
+        try {
+            // 🧩 Soporte para formulario con imagen
+            $nombreImagen = self::subirImagenVehiculo($_FILES['imagen']);
+
+
+            // Campos normales (enviados por JSON o formulario)
+            $input = $_POST ?: json_decode(file_get_contents('php://input'), true);
+            error_log("🧾 [crearVehiculo] Datos recibidos: " . json_encode($input));
+            if (empty($input['placa']) || empty($input['marca']) || empty($input['modelo']) || empty($input['id_usuario'])) {
+                error_log("⚠️ [crearVehiculo] Datos incompletos detectados");
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Datos incompletos']);
+                exit;
+            }
+
+            $db = conectarDB();
+            error_log("✅ [crearVehiculo] Conexión a BD establecida correctamente");
+            $stmt = $db->prepare("
+                INSERT INTO vehiculo (id_usuario, id_tipo_vehiculo, placa, marca, modelo, carroceria, imagen, activo, fecha_registro)
+                VALUES (:id_usuario, :id_tipo_vehiculo, :placa, :marca, :modelo, :carroceria, :imagen, true, NOW())
+            ");
+
+            error_log("📦 [crearVehiculo] Parámetros antes de ejecutar: " . json_encode([
+                'id_usuario' => $input['id_usuario'],
+                'placa' => $input['placa'],
+                'marca' => $input['marca'],
+                'modelo' => $input['modelo'],
+                'carroceria' => $input['carroceria'] ?? null,
+                'imagen' => $nombreImagen
+            ]));
+
+            
+            $stmt->execute([
+                ':id_usuario'  => $input['id_usuario'],
+                ':id_tipo_vehiculo' => $input['id_tipo_vehiculo'],  // 🔥 Nuevo campo obligatorio
+                ':placa'       => strtoupper(trim($input['placa'])),
+                ':marca'       => $input['marca'],
+                ':modelo'      => $input['modelo'],
+                ':carroceria'  => $input['carroceria'] ?? null,
+                ':imagen'      => $nombreImagen
+            ]);
+            error_log("✅ [crearVehiculo] Vehículo insertado correctamente en la BD");
+
+            echo json_encode(['ok' => true, 'message' => 'Vehículo registrado correctamente']);
+        } catch (Exception $e) {
+            error_log("❌ [crearVehiculo] Error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al registrar vehículo',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public static function listarTiposVehiculo()
+    {
+        verificarRolesPermitidosPorID([1, 3]);
+        try {
+            $db = conectarDB();
+            $stmt = $db->query("SELECT id, nombre_tipo_vehiculo FROM tipo_vehiculo ORDER BY id ASC");
+            $tipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['ok' => true, 'tipos' => $tipos]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al listar tipos de vehículo',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 }
