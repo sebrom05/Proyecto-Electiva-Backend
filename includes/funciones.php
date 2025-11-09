@@ -48,6 +48,7 @@ function verificarAdmin() {
 //Verificar Roles permitidos
 function verificarRolesPermitidosPorID(array $rolesPermitidos) {
     session_start();
+    error_log("🧩 Verificando roles - Sesión actual: " . json_encode($_SESSION ?? []));
 
     // 1️⃣ Verificar sesión activa
     if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario']['autenticado'])) {

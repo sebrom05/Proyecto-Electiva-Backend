@@ -131,18 +131,28 @@ class VehiculoController
     // ==========================================
     public static function editarVehiculo()
     {
+        error_log("🧠 Iniciando método editarVehiculo()");
+
+        error_log("🧩 Verificando roles y sesión...");
         verificarRolesPermitidosPorID([1, 3]); // Admin y Técnico
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log("🚫 Método HTTP incorrecto: " . $_SERVER['REQUEST_METHOD']);
             http_response_code(405);
             echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
             exit;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
+        $rawData = file_get_contents('php://input');
+        error_log("📥 Datos recibidos RAW: " . $rawData);
+
+        $input = json_decode($rawData, true);
         $id = $input['id'] ?? null;
+        error_log("🔍 ID recibido: " . var_export($id, true));
+
 
         if (!$id) {
+            error_log("⚠️ ID de vehículo no proporcionado");
             http_response_code(400);
             echo json_encode(['ok' => false, 'message' => 'ID de vehículo requerido']);
             exit;
@@ -150,6 +160,7 @@ class VehiculoController
 
         try {
             $db = conectarDB();
+            error_log("✅ Conexión a BD establecida correctamente");
 
             $campos = [
                 'placa' => $input['placa'] ?? null,
@@ -158,24 +169,39 @@ class VehiculoController
                 'carroceria' => $input['carroceria'] ?? null,
                 'fecha_tecnomecanica' => $input['fecha_tecnomecanica'] ?? null
             ];
+            error_log("📋 Campos recibidos: " . json_encode($campos));
 
             $set = [];
+            $parametros = []; // 🔹 Nuevo array limpio
+
             foreach ($campos as $key => $value) {
-                if (!is_null($value)) $set[] = "$key = :$key";
+                if (!is_null($value)) {
+                    $set[] = "$key = :$key";
+                    $parametros[$key] = $value; // solo agrega los que sí van
+                }
             }
 
             if (empty($set)) {
+                error_log("⚠️ No se enviaron campos válidos para actualizar");
                 echo json_encode(['ok' => false, 'message' => 'No hay campos para actualizar']);
                 exit;
             }
 
             $query = "UPDATE vehiculo SET " . implode(', ', $set) . " WHERE id = :id";
+            error_log("🧩 Query final: $query");
             $stmt = $db->prepare($query);
-            $campos['id'] = $id;
-            $stmt->execute($campos);
 
+            // 🔹 Añadimos el ID al array final
+            $parametros['id'] = $id;
+
+            error_log("📦 Parámetros que se enviarán: " . json_encode($parametros));
+
+            $stmt->execute($parametros);
+
+            error_log("✅ Vehículo actualizado correctamente (ID: $id)");
             echo json_encode(['ok' => true, 'message' => 'Vehículo actualizado correctamente']);
         } catch (Exception $e) {
+            error_log("❌ Error en editarVehiculo: " . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'ok' => false,

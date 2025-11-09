@@ -22,7 +22,10 @@ if (str_contains($uri, '/api/vehiculos/cambiar-estado') && $method === 'PUT') {
 }
 
 // Editar vehículo
-if (str_contains($uri, '/api/vehiculos/editar') && $method === 'PUT') {
+error_log("🧩 Entrando a vehiculo.php - URI: $uri - METHOD: $method");
+
+if (str_contains($uri, '/api/vehiculos/editar') && $method === 'POST') {
+    error_log("🚀 Entrando al controlador editarVehiculo()");
     VehiculoController::editarVehiculo();
     exit;
 }
