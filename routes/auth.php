@@ -1,5 +1,6 @@
 <?php
 use Controllers\AuthController;
+use Controllers\AdminController;
 
 // 🔹 Normalizamos ruta y método
 $uri = strtolower($uri);
@@ -19,6 +20,18 @@ if (str_contains($uri, '/api/auth/logout') && $method === 'POST') {
 // 🔹 VERIFICAR SESIÓN
 if (str_contains($uri, '/api/auth/verificar') && $method === 'GET') {
     AuthController::verificarSesionApi();
+    exit;
+}
+
+
+//Acceso a rutas del admin
+if (str_contains($uri, '/api/admin/estadisticas') && $method === 'GET') {
+    AdminController::obtenerEstadisticas();
+    exit;
+}
+
+if (str_contains($uri, '/api/admin/usuarios') && $method === 'GET') {
+    AdminController::listarUsuarios();
     exit;
 }
 

@@ -71,6 +71,9 @@ class AuthController
             'autenticado' => true
         ];
 
+        $_SESSION['login'] = true;
+        $_SESSION['rol'] = strtolower($rol);
+
 
         unset($usuario->contraseña);
 

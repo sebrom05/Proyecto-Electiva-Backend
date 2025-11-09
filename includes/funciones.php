@@ -25,3 +25,22 @@ function debuguear($variable) {
 function s($html): string {
     return htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
 }
+
+// ==============================
+// 🔹 Validar sesión y rol de administrador
+// ==============================
+function verificarAdmin() {
+    session_start();
+
+    if (!isset($_SESSION['login']) || !$_SESSION['login']) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'message' => 'No autorizado. Inicie sesión.']);
+        exit;
+    }
+
+    if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'message' => 'Acceso denegado. Solo administradores.']);
+        exit;
+    }
+}
