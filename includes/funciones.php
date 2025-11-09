@@ -44,3 +44,25 @@ function verificarAdmin() {
         exit;
     }
 }
+
+//Verificar Roles permitidos
+function verificarRolesPermitidosPorID(array $rolesPermitidos) {
+    session_start();
+
+    // 1️⃣ Verificar sesión activa
+    if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario']['autenticado'])) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'message' => 'No autorizado. Inicie sesión.']);
+        exit;
+    }
+
+    // 2️⃣ Verificar ID del rol
+    $rolUsuario = $_SESSION['usuario']['rol_id'] ?? null;
+
+    if (!in_array($rolUsuario, $rolesPermitidos)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'message' => 'Acceso denegado. Rol no autorizado.']);
+        exit;
+    }
+}
+
