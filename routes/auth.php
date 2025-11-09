@@ -35,6 +35,17 @@ if (str_contains($uri, '/api/admin/usuarios') && $method === 'GET') {
     exit;
 }
 
+if (str_contains($uri, '/api/admin/usuario/eliminar') && $method === 'DELETE') {
+    AdminController::eliminarUsuario();
+    exit;
+}
+
+if (str_contains($uri, '/api/admin/usuario/activar') && $method === 'PUT') {
+    AdminController::activarUsuario();
+    exit;
+}
+
+
 // Puedes dejar esto temporalmente para debug
 if ($method === 'GET' && str_contains($uri, '/api/login')) {
     echo json_encode(["ok" => true, "message" => "Ruta de login activa (usa POST para autenticar)"]);
