@@ -33,3 +33,15 @@ if (str_contains($uri, '/api/citas/mis-citas') && $method === 'GET') {
     CitaController::listarCitasPorUsuario();
     exit;
 }
+
+// Obtener cita por ID
+if (str_contains($uri, '/api/citas/ver') && $method === 'GET') {
+    $id = $_GET['id'] ?? null;
+    if ($id) {
+        CitaController::obtenerCitaPorId($id);
+    } else {
+        echo json_encode(['ok' => false, 'message' => 'ID requerido']);
+    }
+    exit;
+}
+

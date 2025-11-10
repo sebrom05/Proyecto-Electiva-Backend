@@ -35,18 +35,19 @@ class CitaController {
                     c.id,
                     c.fecha,
                     c.hora,
-                    c.fecha_registro_cita,
-                    e.nombre_estado_cita AS estado,
-                    v.id AS id_vehiculo,
+                    e.nombre_estado_cita,
                     v.placa,
                     v.marca,
                     v.modelo,
-                    CONCAT(u.nombre, ' ', u.apellido) AS propietario
+                    v.carroceria,
+                    u.nombre AS nombre_cliente,
+                    u.apellido AS apellido_cliente,
+                    u.email AS email_cliente
                 FROM cita c
-                JOIN estado_cita e ON c.id_estado_cita = e.id
-                JOIN vehiculo v ON c.id_vehiculo = v.id
-                JOIN usuario u ON v.id_usuario = u.id
-                ORDER BY c.fecha DESC, c.hora ASC
+                INNER JOIN vehiculo v ON c.id_vehiculo = v.id
+                INNER JOIN usuario u ON v.id_usuario = u.id
+                INNER JOIN estado_cita e ON c.id_estado_cita = e.id
+                ORDER BY c.fecha DESC, c.hora DESC
             ";
             $stmt = $db->query($query);
             $citas = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -247,7 +248,7 @@ class CitaController {
     {
         verificarRolesPermitidosPorID([1,3]); // admin y técnico
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
             exit;
@@ -265,6 +266,16 @@ class CitaController {
 
         try {
             $db = conectarDB();
+
+            // Verificar que exista la cita
+            $check = $db->prepare("SELECT id FROM cita WHERE id = :id");
+            $check->execute([':id' => (int)$id]);
+            if (!$check->fetch()) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'message' => 'Cita no encontrada']);
+                exit;
+            }
+
             $stmt = $db->prepare("UPDATE cita SET id_estado_cita = :estado WHERE id = :id");
             $stmt->execute([':estado' => (int)$nuevoEstado, ':id' => (int)$id]);
             echo json_encode(['ok' => true, 'message' => 'Estado de cita actualizado correctamente']);
@@ -303,4 +314,50 @@ class CitaController {
             echo json_encode(['ok' => false, 'message' => 'Error al listar', 'error' => $e->getMessage()]);
         }
     }
+
+    public static function obtenerCitaPorId($id)
+    {
+        verificarRolesPermitidosPorID([1,3]); // admin y técnico
+
+        try {
+            $db = conectarDB();
+            $query = "
+                SELECT 
+                    c.id,
+                    c.fecha,
+                    c.hora,
+                    c.id_estado_cita,
+                    e.nombre_estado_cita,
+                    v.id AS id_vehiculo,
+                    v.placa,
+                    v.marca,
+                    v.modelo,
+                    v.carroceria,
+                    v.imagen,
+                    u.nombre AS nombre_cliente,
+                    u.apellido AS apellido_cliente,
+                    u.email AS email_cliente
+                FROM cita c
+                INNER JOIN vehiculo v ON c.id_vehiculo = v.id
+                INNER JOIN usuario u ON v.id_usuario = u.id
+                INNER JOIN estado_cita e ON c.id_estado_cita = e.id
+                WHERE c.id = :id
+                LIMIT 1
+            ";
+            $stmt = $db->prepare($query);
+            $stmt->execute([':id' => (int)$id]);
+            $cita = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($cita) {
+                echo json_encode(['ok' => true, 'cita' => $cita]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'message' => 'Cita no encontrada']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'message' => 'Error al obtener cita', 'error' => $e->getMessage()]);
+        }
+    }
+
 }
