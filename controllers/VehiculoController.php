@@ -16,6 +16,8 @@ class VehiculoController
             $stmt = $db->prepare("
                 SELECT 
                     v.id,
+                    v.id_usuario,
+                    v.id_tipo_vehiculo,
                     v.placa,
                     v.marca,
                     v.modelo,
@@ -33,6 +35,7 @@ class VehiculoController
                 LEFT JOIN usuario u ON v.id_usuario = u.id
                 ORDER BY v.id DESC
             ");
+
             $stmt->execute();
 
             $vehiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
