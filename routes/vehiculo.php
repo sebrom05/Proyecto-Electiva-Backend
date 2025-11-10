@@ -54,5 +54,11 @@ if (str_contains($uri, '/api/admin/vehiculos-modelo-mes') && $method === 'GET') 
     exit;
 }
 
+// 🔹 Listar vehículos solo del usuario autenticado (cliente)
+if (str_contains($uri, '/api/vehiculos/mis-vehiculos') && $method === 'GET') {
+    VehiculoController::listarVehiculosPorUsuario();
+    exit;
+}
+
 
 // (Más adelante agregarás aquí crear, actualizar, eliminar, etc.)

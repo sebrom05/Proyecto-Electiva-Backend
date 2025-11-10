@@ -51,6 +51,8 @@ require_once BASE_PATH . '/routes/auth.php';
 require_once BASE_PATH . '/routes/registro.php';
 require_once BASE_PATH . '/routes/usuario.php';
 require_once BASE_PATH . '/routes/vehiculo.php';
+require_once BASE_PATH . '/routes/cita.php';
+
 
 // (Más adelante: vehiculoRoutes.php, revisionRoutes.php, etc.)
 

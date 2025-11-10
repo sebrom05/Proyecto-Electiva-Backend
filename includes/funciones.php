@@ -4,14 +4,21 @@
 // ==============================
 
 // Verifica si el usuario está autenticado
-function estaAutenticado() {
+function verificarSesionAPI() {
     session_start();
 
     if (!isset($_SESSION['login']) || !$_SESSION['login']) {
-        header('Location: /');
+        http_response_code(401);
+        echo json_encode([
+            'ok' => false,
+            'message' => 'Debe iniciar sesión para continuar'
+        ]);
         exit;
     }
+
+    return $_SESSION['usuario'] ?? null;
 }
+
 
 // Función de depuración (para pruebas)
 function debuguear($variable) {

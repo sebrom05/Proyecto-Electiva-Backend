@@ -432,6 +432,56 @@ class VehiculoController
         }
     }
 
+    public static function listarVehiculosPorUsuario()
+    {
+        // Cualquier usuario autenticado (sin verificar rol específico)
+        require_once __DIR__ . '/../includes/cors.php';
+        session_start();
+
+        if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario']['id'])) {
+            http_response_code(401);
+            echo json_encode(['ok' => false, 'message' => 'No autenticado']);
+            exit;
+        }
+
+        $idUsuario = $_SESSION['usuario']['id'];
+
+        try {
+            $db = conectarDB();
+            $stmt = $db->prepare("
+                SELECT 
+                    v.id,
+                    v.placa,
+                    v.marca,
+                    v.modelo,
+                    v.carroceria,
+                    v.fecha_tecnomecanica,
+                    v.imagen,
+                    v.activo
+                FROM vehiculo v
+                WHERE v.id_usuario = :idUsuario
+                ORDER BY v.id DESC
+            ");
+            $stmt->bindValue(':idUsuario', $idUsuario, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $vehiculos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'ok' => true,
+                'vehiculos' => $vehiculos
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al listar los vehículos del usuario',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 
 
 }
