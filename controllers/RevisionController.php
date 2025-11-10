@@ -111,12 +111,34 @@ class RevisionController
         $stmt->execute([':id' => $idRevision ?? $idCita]);
         $revision = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        if ($revision) {
-            echo json_encode(['ok' => true, 'revision' => $revision]);
-        } else {
+        if (!$revision) {
             echo json_encode(['ok' => false, 'message' => 'Revisión no encontrada']);
+            return;
         }
+
+        // 🔹 Obtener los parámetros evaluados
+        $parametrosQuery = "
+            SELECT 
+                p.nombre_parametro,
+                p.categoria,
+                dp.valor_medicion,
+                dp.resultado_parametro
+            FROM detalle_parametro_inspeccion dp
+            JOIN parametro_inspeccion p ON dp.id_parametro_inspeccion = p.id
+            JOIN detalle_inspeccion di ON dp.id_detalle_inspeccion = di.id
+            JOIN revision r ON r.id_detalle_inspeccion = di.id
+            WHERE r.id = :idRevision
+        ";
+
+        $stmt2 = $db->prepare($parametrosQuery);
+        $stmt2->execute([':idRevision' => $revision['id_revision']]);
+        $parametros = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
+
+        $revision['parametros'] = $parametros;
+
+        echo json_encode(['ok' => true, 'revision' => $revision]);
     }
+
 
 
 
