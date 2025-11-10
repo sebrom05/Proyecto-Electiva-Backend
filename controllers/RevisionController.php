@@ -68,36 +68,57 @@ class RevisionController
     public static function verRevision()
     {
         verificarRolesPermitidosPorID([1,3]); // admin / técnico
-        $idCita = $_GET['id'] ?? null;
 
-        if (!$idCita) {
-            echo json_encode(['ok' => false, 'message' => 'ID requerido']);
+        $idCita = $_GET['id_cita'] ?? null;
+        $idRevision = $_GET['id_revision'] ?? null;
+
+        if (!$idCita && !$idRevision) {
+            echo json_encode(['ok' => false, 'message' => 'Debe enviar id_cita o id_revision']);
             return;
         }
 
         $db = conectarDB();
 
+        // 🔹 Usa la condición correcta según el parámetro recibido
+        $where = $idRevision ? "r.id = :id" : "r.id_cita = :id";
+
         $query = "
             SELECT 
                 r.id AS id_revision, 
                 r.fecha_inspeccion, 
-                d.resultado, d.observaciones, d.recomendaciones, d.efectividad_numero,
-                c.id AS id_cita, v.placa, v.marca, v.modelo, v.carroceria,
-                u.nombre, u.apellido, u.email
+                d.resultado, 
+                d.observaciones, 
+                d.recomendaciones, 
+                d.efectividad_numero,
+                c.id AS id_cita, 
+                v.placa, 
+                v.marca, 
+                v.modelo, 
+                v.carroceria,
+                u.nombre, 
+                u.apellido, 
+                u.email
             FROM revision r
             JOIN detalle_inspeccion d ON r.id_detalle_inspeccion = d.id
             JOIN cita c ON r.id_cita = c.id
             JOIN vehiculo v ON c.id_vehiculo = v.id
             JOIN usuario u ON v.id_usuario = u.id
-            WHERE r.id_cita = :id
+            WHERE $where
+            LIMIT 1
         ";
 
         $stmt = $db->prepare($query);
-        $stmt->execute([':id' => $idCita]);
+        $stmt->execute([':id' => $idRevision ?? $idCita]);
         $revision = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        echo json_encode(['ok' => true, 'revision' => $revision]);
+        if ($revision) {
+            echo json_encode(['ok' => true, 'revision' => $revision]);
+        } else {
+            echo json_encode(['ok' => false, 'message' => 'Revisión no encontrada']);
+        }
     }
+
+
 
     // GET /api/revision/listar
     public static function listarRevisiones()
