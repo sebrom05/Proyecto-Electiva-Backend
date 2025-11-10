@@ -278,12 +278,104 @@ class CitaController {
 
             $stmt = $db->prepare("UPDATE cita SET id_estado_cita = :estado WHERE id = :id");
             $stmt->execute([':estado' => (int)$nuevoEstado, ':id' => (int)$id]);
+
+            // 🔔 NUEVO: Enviar correo al cliente sobre el cambio
+            self::enviarAvisoCambioEstado((int)$id);
+
             echo json_encode(['ok' => true, 'message' => 'Estado de cita actualizado correctamente']);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['ok' => false, 'message' => 'Error al actualizar estado', 'error' => $e->getMessage()]);
         }
     }
+
+    private static function enviarAvisoCambioEstado(int $idCita): array
+    {
+        require_once __DIR__ . '/../vendor/autoload.php';
+        require_once __DIR__ . '/../includes/config/database.php';
+
+        try {
+            $db = conectarDB();
+
+            $q = $db->prepare("
+                SELECT 
+                    c.id, c.fecha, c.hora,
+                    e.nombre_estado_cita AS estado,
+                    v.placa, v.marca, v.modelo, v.carroceria,
+                    u.nombre, u.apellido, u.email
+                FROM cita c
+                JOIN estado_cita e ON e.id = c.id_estado_cita
+                JOIN vehiculo v ON v.id = c.id_vehiculo
+                JOIN usuario u ON u.id = v.id_usuario
+                WHERE c.id = :id
+                LIMIT 1
+            ");
+            $q->execute([':id' => $idCita]);
+            $cita = $q->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cita) {
+                error_log("❌ [enviarAvisoCambioEstado] Cita no encontrada ID=$idCita");
+                return ['ok' => false];
+            }
+
+            // Mensaje según estado
+            $estado = strtolower($cita['estado']);
+            $mensajeEstado = match ($estado) {
+                'confirmada' => 'Tu cita ha sido confirmada ✅',
+                'en proceso' => 'Tu revisión está en proceso 🔧',
+                'finalizada' => 'Tu revisión ha finalizado ✅',
+                'cancelada'  => 'Tu cita fue cancelada ❌',
+                'rechazada'  => 'Tu cita fue rechazada ❌',
+                default      => "El estado de tu cita cambió a: {$cita['estado']}",
+            };
+
+            // Configuración de correo
+            cargarEnv(dirname(__DIR__, 2) . '/.env');
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+
+            $mail->isSMTP();
+            $mail->Host = getenv('MAIL_HOST');
+            $mail->SMTPAuth = true;
+            $mail->Username = getenv('MAIL_USERNAME');
+            $mail->Password = getenv('MAIL_PASSWORD');
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = (int)(getenv('MAIL_PORT') ?: 2525);
+
+            // Destinatario
+            $mail->setFrom('no-reply@tecnocitascda.com', 'TecnoCitasCDA');
+            $mail->addAddress($cita['email'], "{$cita['nombre']} {$cita['apellido']}");
+            $mail->addCC(getenv('MAIL_TO') ?: 'inbox@mailtrap.io', 'TecnoCitasCDA Notificaciones');
+
+            $mail->isHTML(true);
+            $mail->Subject = "Actualización de tu cita: {$cita['estado']}";
+            $mail->Body = "
+                <div style='font-family: Arial, sans-serif; color: #333;'>
+                    <h2>Actualización de estado de tu cita</h2>
+                    <p>Hola <strong>{$cita['nombre']} {$cita['apellido']}</strong>,</p>
+                    <p>{$mensajeEstado}</p>
+                    <hr>
+                    <p><strong>Detalles de tu cita:</strong></p>
+                    <ul>
+                        <li><strong>Fecha:</strong> {$cita['fecha']}</li>
+                        <li><strong>Hora:</strong> {$cita['hora']}</li>
+                        <li><strong>Vehículo:</strong> {$cita['placa']} ({$cita['marca']} {$cita['modelo']})</li>
+                        <li><strong>Carrocería:</strong> {$cita['carroceria']}</li>
+                    </ul>
+                    <p>Gracias por confiar en <strong>TecnoCitasCDA</strong>.</p>
+                </div>
+            ";
+
+            $mail->AltBody = "Hola {$cita['nombre']}, tu cita ahora está '{$cita['estado']}'.";
+
+            $mail->send();
+            error_log("📧 [enviarAvisoCambioEstado] Correo enviado a {$cita['email']} con estado {$cita['estado']}");
+            return ['ok' => true];
+        } catch (\Exception $e) {
+            error_log("❌ Error enviando correo (cambio estado): " . $e->getMessage());
+            return ['ok' => false, 'error' => $e->getMessage()];
+        }
+    }
+
 
     // (Opcional) GET /api/citas/mis-citas  → para rol cliente (listar solo sus vehículos)
     public static function listarCitasPorUsuario()
