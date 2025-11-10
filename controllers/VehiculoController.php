@@ -340,5 +340,98 @@ class VehiculoController
         }
     }
 
+    public static function estadisticasVehiculos()
+    {
+        verificarRolesPermitidosPorID([1]); // solo admin
+
+        try {
+            $db = conectarDB();
+
+            // 🔹 Vehículos por tipo
+            $stmt = $db->query("
+                SELECT tv.nombre_tipo_vehiculo AS tipo, COUNT(*) AS total
+                FROM vehiculo v
+                JOIN tipo_vehiculo tv ON v.id_tipo_vehiculo = tv.id
+                GROUP BY tv.nombre_tipo_vehiculo
+            ");
+            $porTipo = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 🔹 Vehículos por marca
+            $stmt = $db->query("
+                SELECT marca, COUNT(*) AS total
+                FROM vehiculo
+                GROUP BY marca
+                ORDER BY total DESC
+                LIMIT 5
+            ");
+            $porMarca = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 🔹 Vehículos por estado (activo/inactivo)
+            $stmt = $db->query("
+                SELECT 
+                    CASE WHEN activo = TRUE THEN 'Activo' ELSE 'Inactivo' END AS estado,
+                    COUNT(*) AS total
+                FROM vehiculo
+                GROUP BY activo
+            ");
+            $porEstado = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'ok' => true,
+                'porTipo' => $porTipo,
+                'porMarca' => $porMarca,
+                'porEstado' => $porEstado
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al obtener estadísticas de vehículos',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public static function estadisticasPorModeloYMes()
+    {
+        verificarRolesPermitidosPorID([1]); // solo admin
+
+        try {
+            $db = conectarDB();
+
+            // 🔹 Vehículos por año/modelo
+            $stmt = $db->query("
+                SELECT modelo, COUNT(*) AS total
+                FROM vehiculo
+                GROUP BY modelo
+                ORDER BY modelo ASC
+            ");
+            $porModelo = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 🔹 Vehículos registrados por mes
+            $stmt = $db->query("
+                SELECT TO_CHAR(fecha_registro, 'YYYY-MM') AS mes, COUNT(*) AS total
+                FROM vehiculo
+                GROUP BY mes
+                ORDER BY mes ASC
+            ");
+            $porMes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'ok' => true,
+                'porModelo' => $porModelo,
+                'porMes' => $porMes
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al obtener estadísticas por modelo y mes',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 
 }

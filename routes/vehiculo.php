@@ -42,4 +42,17 @@ if (str_contains($uri, '/api/vehiculos/tipos') && $method === 'GET') {
     exit;
 }
 
+// 🔹 Estadísticas de vehículos (solo admin)
+if (str_contains($uri, '/api/admin/vehiculos-estadisticas') && $method === 'GET') {
+    VehiculoController::estadisticasVehiculos();
+    exit;
+}
+
+// 🔹 Estadísticas por modelo y mes
+if (str_contains($uri, '/api/admin/vehiculos-modelo-mes') && $method === 'GET') {
+    VehiculoController::estadisticasPorModeloYMes();
+    exit;
+}
+
+
 // (Más adelante agregarás aquí crear, actualizar, eliminar, etc.)
