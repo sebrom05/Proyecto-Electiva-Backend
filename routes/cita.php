@@ -45,3 +45,12 @@ if (str_contains($uri, '/api/citas/ver') && $method === 'GET') {
     exit;
 }
 
+
+// Eliminar cita (admin/técnico)
+if (str_contains($uri, '/api/citas/eliminar') && $method === 'POST') {
+    CitaController::eliminarCita();
+    exit;
+}
+
+
+

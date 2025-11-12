@@ -452,4 +452,60 @@ class CitaController {
         }
     }
 
+    public static function eliminarCita()
+    {
+        verificarRolesPermitidosPorID([1, 3]); // admin y técnico
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'DELETE' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = $input['id'] ?? null;
+
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'message' => 'ID no proporcionado']);
+            exit;
+        }
+
+        try {
+            $db = conectarDB();
+
+            // 🔹 Verificar si existe y si está cancelada
+            $check = $db->prepare("
+                SELECT c.id, e.nombre_estado_cita 
+                FROM cita c
+                JOIN estado_cita e ON c.id_estado_cita = e.id
+                WHERE c.id = :id
+            ");
+            $check->execute([':id' => (int)$id]);
+            $cita = $check->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cita) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'message' => 'Cita no encontrada']);
+                exit;
+            }
+
+            if (strtolower($cita['nombre_estado_cita']) !== 'cancelada') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Solo se pueden eliminar citas canceladas']);
+                exit;
+            }
+
+            // 🔹 Eliminar cita
+            $delete = $db->prepare("DELETE FROM cita WHERE id = :id");
+            $delete->execute([':id' => (int)$id]);
+
+            echo json_encode(['ok' => true, 'message' => 'Cita eliminada correctamente']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'message' => 'Error al eliminar cita', 'error' => $e->getMessage()]);
+        }
+    }
+
+
 }
