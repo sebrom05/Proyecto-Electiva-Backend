@@ -235,7 +235,10 @@ class VehiculoController
             }
 
             // Subir nueva imagen
-            $nombreImagen = uniqid('vehiculo_') . '_' . basename($imagenArchivo['name']);
+            $nombreOriginal = basename($imagenArchivo['name']);
+            $nombreLimpio = preg_replace('/[^A-Za-z0-9\.\-_]/', '_', $nombreOriginal); // reemplaza espacios y caracteres raros
+            $nombreImagen = uniqid('vehiculo_') . '_' . $nombreLimpio;
+
             $rutaDestino = CARPETA_IMAGENES . $nombreImagen;
 
             if (!move_uploaded_file($imagenArchivo['tmp_name'], $rutaDestino)) {
