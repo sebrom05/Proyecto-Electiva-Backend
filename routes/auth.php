@@ -45,6 +45,20 @@ if (str_contains($uri, '/api/admin/usuario/activar') && $method === 'PUT') {
     exit;
 }
 
+if (str_contains($uri, '/api/auth/recuperar') && $method==='POST') { 
+    AuthController::recuperarContrasena(); 
+    exit; 
+}
+if (str_contains($uri, '/api/auth/verificar-recuperacion') && $method==='POST') { 
+    AuthController::verificarRecuperacion(); 
+    exit; 
+}
+if (str_contains($uri, '/api/auth/cambiar-contrasena') && $method==='POST') { 
+    AuthController::cambiarContrasena(); 
+    exit; 
+}
+
+
 
 // Puedes dejar esto temporalmente para debug
 if ($method === 'GET' && str_contains($uri, '/api/login')) {
