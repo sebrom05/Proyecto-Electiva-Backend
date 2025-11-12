@@ -324,7 +324,7 @@ class VehiculoController
 
     public static function listarTiposVehiculo()
     {
-        verificarRolesPermitidosPorID([1, 3]);
+        verificarRolesPermitidosPorID([1,2, 3]);
         try {
             $db = conectarDB();
             $stmt = $db->query("SELECT id, nombre_tipo_vehiculo FROM tipo_vehiculo ORDER BY id ASC");
@@ -480,6 +480,97 @@ class VehiculoController
             ]);
         }
     }
+
+    // ==========================================
+    // 🔹 4. Cliente: registrar su propio vehículo (debug)
+    // ==========================================
+    public static function crearVehiculoCliente()
+    {
+        require_once __DIR__ . '/../includes/cors.php';
+        session_start();
+
+        error_log("🚗 [crearVehiculoCliente] --- INICIO ---");
+
+        // 🔸 Validar sesión
+        if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario']['id'])) {
+            error_log("❌ [crearVehiculoCliente] No hay sesión activa");
+            http_response_code(401);
+            echo json_encode(['ok' => false, 'message' => 'Debe iniciar sesión.']);
+            exit;
+        }
+
+        $idUsuario = $_SESSION['usuario']['id'];
+        error_log("🧑‍💻 [crearVehiculoCliente] Usuario autenticado con ID: $idUsuario");
+
+        // 🔸 Validar método
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log("⛔ [crearVehiculoCliente] Método incorrecto: " . $_SERVER['REQUEST_METHOD']);
+            http_response_code(405);
+            echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
+            exit;
+        }
+
+        try {
+            // 🔸 Imagen (opcional)
+            $nombreImagen = null;
+            if (!empty($_FILES['imagen']['name'])) {
+                error_log("📸 [crearVehiculoCliente] Imagen recibida: " . $_FILES['imagen']['name']);
+                $nombreImagen = self::subirImagenVehiculo($_FILES['imagen']);
+                error_log("✅ [crearVehiculoCliente] Imagen guardada como: " . $nombreImagen);
+            } else {
+                error_log("⚠️ [crearVehiculoCliente] No se envió imagen");
+            }
+
+            // 🔸 Datos recibidos
+            $input = $_POST ?: json_decode(file_get_contents('php://input'), true);
+            error_log("📦 [crearVehiculoCliente] Datos recibidos: " . json_encode($input));
+
+            if (empty($input['placa']) || empty($input['marca']) || empty($input['modelo'])) {
+                error_log("⚠️ [crearVehiculoCliente] Datos obligatorios faltantes");
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'Faltan datos obligatorios']);
+                exit;
+            }
+
+            // 🔹 Conexión a BD
+            $db = conectarDB();
+            error_log("✅ [crearVehiculoCliente] Conectado a la base de datos correctamente");
+
+            // 🔹 Insertar registro
+            $stmt = $db->prepare("
+                INSERT INTO vehiculo 
+                (id_usuario, id_tipo_vehiculo, placa, marca, modelo, carroceria, imagen, activo, fecha_registro)
+                VALUES (:id_usuario, :id_tipo_vehiculo, :placa, :marca, :modelo, :carroceria, :imagen, true, NOW())
+            ");
+
+            $params = [
+                ':id_usuario'       => $idUsuario,
+                ':id_tipo_vehiculo' => $input['id_tipo_vehiculo'] ?? 1,
+                ':placa'            => strtoupper(trim($input['placa'])),
+                ':marca'            => trim($input['marca']),
+                ':modelo'           => $input['modelo'],
+                ':carroceria'       => $input['carroceria'] ?? null,
+                ':imagen'           => $nombreImagen
+            ];
+
+            error_log("🧾 [crearVehiculoCliente] Parámetros: " . json_encode($params));
+            $stmt->execute($params);
+
+            error_log("✅ [crearVehiculoCliente] Vehículo insertado correctamente en la base de datos");
+
+            echo json_encode(['ok' => true, 'message' => 'Vehículo registrado correctamente']);
+        } catch (Exception $e) {
+            error_log("❌ [crearVehiculoCliente] Error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al registrar vehículo del cliente',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 
 
 

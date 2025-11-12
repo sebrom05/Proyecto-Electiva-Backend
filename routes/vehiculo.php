@@ -9,6 +9,18 @@ $method = strtoupper($method);
 // 🔹 RUTAS PARA VEHÍCULOS
 // ==============================
 
+// Crear vehiculo del cliente
+if (str_contains($uri, '/api/vehiculos/crear-cliente') && $method === 'POST') {
+    VehiculoController::crearVehiculoCliente();
+    exit;
+}
+
+// ✅ Listar vehículos del usuario autenticado (CLIENTE)
+if (str_contains($uri, '/api/vehiculos/mis-vehiculos') && $method === 'GET') {
+    VehiculoController::listarVehiculosPorUsuario();
+    exit;
+}
+
 // Listar vehículos (solo Admin y Técnico)
 if (str_contains($uri, '/api/vehiculos/listar') && $method === 'GET') {
     VehiculoController::listarVehiculos();
@@ -59,6 +71,9 @@ if (str_contains($uri, '/api/vehiculos/mis-vehiculos') && $method === 'GET') {
     VehiculoController::listarVehiculosPorUsuario();
     exit;
 }
+
+
+
 
 
 // (Más adelante agregarás aquí crear, actualizar, eliminar, etc.)
