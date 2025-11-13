@@ -79,6 +79,30 @@ class CitaController {
             echo json_encode(['ok' => false, 'message' => 'Faltan datos requeridos']);
             exit;
         }
+        /*
+        --------------------------------------------------------------------
+        🔹 VALIDACIÓN DE INTERVALOS DE MEDIA HORA (AQUÍ VA EL CÓDIGO)
+        --------------------------------------------------------------------
+        */
+
+        // Validar que la hora esté en intervalos de 30 minutos
+        $hora = $input['hora'];
+        $partes = explode(':', $hora);
+
+        if (count($partes) !== 2) {
+            echo json_encode(['ok' => false, 'message' => 'Formato de hora inválido']);
+            exit;
+        }
+
+        $minutos = (int)$partes[1];
+
+        if ($minutos !== 0 && $minutos !== 30) {
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Solo se permiten citas cada 30 minutos (00 o 30 minutos).'
+            ]);
+            exit;
+        }
         // 1. Comprobar si ya existe una cita en CONFIRMADA en la misma fecha y hora
         $check = $db->prepare("
             SELECT id FROM cita 
