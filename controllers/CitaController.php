@@ -60,9 +60,11 @@ class CitaController {
     }
 
     // POST /api/citas/crear
-    public static function crearCita()
+   public static function crearCita()
     {
         $usuario = verificarSesionAPI();
+        $db = conectarDB();
+
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
@@ -77,6 +79,27 @@ class CitaController {
             echo json_encode(['ok' => false, 'message' => 'Faltan datos requeridos']);
             exit;
         }
+        // 1. Comprobar si ya existe una cita en CONFIRMADA en la misma fecha y hora
+        $check = $db->prepare("
+            SELECT id FROM cita 
+            WHERE fecha = :fecha 
+            AND hora = :hora 
+            AND id_estado_cita = 3 -- 3 = Confirmada
+            LIMIT 1
+        ");
+        $check->execute([
+            ':fecha' => $input['fecha'],
+            ':hora'  => $input['hora']
+        ]);
+
+        if ($check->fetch()) {
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Ya existe una cita confirmada en ese horario. Elija otro.'
+            ]);
+            exit;
+        }
+
 
         try {
             $cita = new Cita([
@@ -255,7 +278,7 @@ class CitaController {
         }
 
         $input = json_decode(file_get_contents('php://input'), true);
-        $id = $input['id'] ?? null;
+        $id = $input['id'] ?? null;  
         $nuevoEstado = $input['id_estado_cita'] ?? null;
 
         if (!$id || !$nuevoEstado) {
@@ -267,22 +290,54 @@ class CitaController {
         try {
             $db = conectarDB();
 
-            // Verificar que exista la cita
-            $check = $db->prepare("SELECT id FROM cita WHERE id = :id");
-            $check->execute([':id' => (int)$id]);
-            if (!$check->fetch()) {
+            // ✔ Verificar que exista la cita
+            $existCheck = $db->prepare("SELECT fecha, hora FROM cita WHERE id = :id");
+            $existCheck->execute([':id' => (int)$id]);
+            $datos = $existCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$datos) {
                 http_response_code(404);
                 echo json_encode(['ok' => false, 'message' => 'Cita no encontrada']);
                 exit;
             }
 
+            // ✔ Si va a CONFIRMADA (2), validar que el horario NO esté ocupado
+            if ((int)$nuevoEstado === 2) {
+
+                $conflictCheck = $db->prepare("
+                    SELECT id FROM cita
+                    WHERE fecha = :fecha
+                    AND hora = :hora
+                    AND id_estado_cita = 3
+                    AND id != :id
+                    LIMIT 1
+                ");
+                $conflictCheck->execute([
+                    ':fecha' => $datos['fecha'],
+                    ':hora'  => $datos['hora'],
+                    ':id'    => (int)$id
+                ]);
+
+                if ($conflictCheck->fetch()) {
+                    echo json_encode([
+                        'ok' => false,
+                        'message' => 'Ya existe una cita confirmada en ese horario. No se puede confirmar esta.'
+                    ]);
+                    exit;
+                }
+                error_log("🟢 cambiarEstado() - ID: $id, nuevoEstado: $nuevoEstado");
+
+            }
+
+            // ✔ Actualizar estado
             $stmt = $db->prepare("UPDATE cita SET id_estado_cita = :estado WHERE id = :id");
             $stmt->execute([':estado' => (int)$nuevoEstado, ':id' => (int)$id]);
 
-            // 🔔 NUEVO: Enviar correo al cliente sobre el cambio
+            // ✔ Enviar correo al cliente indicando el cambio
             self::enviarAvisoCambioEstado((int)$id);
 
             echo json_encode(['ok' => true, 'message' => 'Estado de cita actualizado correctamente']);
+
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['ok' => false, 'message' => 'Error al actualizar estado', 'error' => $e->getMessage()]);
