@@ -5,6 +5,9 @@ use Model\Revision;
 use Model\DetalleInspeccion;
 use Model\DetalleParametroInspeccion;
 
+use PDO;
+use Exception;
+
 require_once __DIR__ . '/../includes/config/database.php';
 
 class RevisionController
@@ -24,6 +27,9 @@ class RevisionController
         $db = conectarDB();
 
         try {
+            // 🔹 Iniciamos transacción
+            $db->beginTransaction();
+
             // 1️⃣ Guardar detalle de inspección
             $detalle = new DetalleInspeccion([
                 'resultado' => $input['resultado'],
@@ -33,6 +39,7 @@ class RevisionController
             ]);
 
             if (!$detalle->guardar()) {
+                $db->rollBack();
                 echo json_encode(['ok' => false, 'message' => 'Error al crear detalle de inspección']);
                 return;
             }
@@ -43,7 +50,12 @@ class RevisionController
                 'id_detalle_inspeccion' => $detalle->id,
                 'fecha_inspeccion' => date('Y-m-d')
             ]);
-            $revision->guardar();
+
+            if (!$revision->guardar()) {
+                $db->rollBack();
+                echo json_encode(['ok' => false, 'message' => 'Error al crear revisión']);
+                return;
+            }
 
             // 3️⃣ Guardar parámetros si vienen
             if (!empty($input['parametros'])) {
@@ -54,15 +66,81 @@ class RevisionController
                         'valor_medicion' => $p['valor_medicion'] ?? '',
                         'resultado_parametro' => $p['resultado_parametro'] ?? ''
                     ]);
-                    $param->guardar();
+                    if (!$param->guardar()) {
+                        $db->rollBack();
+                        echo json_encode(['ok' => false, 'message' => 'Error al guardar parámetros']);
+                        return;
+                    }
                 }
             }
 
-            echo json_encode(['ok' => true, 'message' => 'Revisión registrada correctamente']);
+            // 4️⃣ Cambiar estado de la cita a "Finalizada"
+            $sqlEstado = "
+                UPDATE cita 
+                SET id_estado_cita = (
+                    SELECT id FROM estado_cita 
+                    WHERE LOWER(nombre_estado_cita) = 'finalizada'
+                    LIMIT 1
+                )
+                WHERE id = :id_cita
+            ";
+            $stmtEstado = $db->prepare($sqlEstado);
+            $stmtEstado->execute([':id_cita' => (int)$input['id_cita']]);
+
+            // (Opcional: si quieres asegurarte de que sí cambió una fila)
+            if ($stmtEstado->rowCount() === 0) {
+                // Si no encontró el estado o cita, puedes decidir si haces rollback o no
+                // Por ahora solo dejamos un log:
+                error_log("⚠ No se pudo actualizar estado de cita a Finalizada para id_cita={$input['id_cita']}");
+            }
+
+            // ✅ Todo bien → confirmamos
+            $db->commit();
+
+            echo json_encode(['ok' => true, 'message' => 'Revisión registrada y cita finalizada correctamente']);
         } catch (\Exception $e) {
-            echo json_encode(['ok' => false, 'message' => 'Error al guardar revisión', 'error' => $e->getMessage()]);
+            $db->rollBack();
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al guardar revisión',
+                'error' => $e->getMessage()
+            ]);
         }
+
+        // Buscar datos del cliente
+        $sql = "
+            SELECT u.nombre, u.apellido, u.email
+            FROM cita c
+            JOIN vehiculo v ON c.id_vehiculo = v.id
+            JOIN usuario u ON v.id_usuario = u.id
+            WHERE c.id = :id
+        ";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':id' => (int)$input['id_cita']]);
+        $cliente = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($cliente) {
+            $nombre = $cliente['nombre'] . ' ' . $cliente['apellido'];
+            $email = $cliente['email'];
+
+            $asunto = "📋 Resultado de tu revisión técnico-mecánica";
+
+            $html = "
+                <h2>Resultado de tu revisión técnico-mecánica</h2>
+                <p>Hola <strong>$nombre</strong>,</p>
+                <p>Tu revisión para la cita #{$input['id_cita']} ha sido finalizada.</p>
+                <p><strong>Resultado general:</strong> {$input['resultado']}</p>
+                <p><strong>Observaciones:</strong> {$input['observaciones']}</p>
+                <p><strong>Recomendaciones:</strong> {$input['recomendaciones']}</p>
+                <p>Gracias por confiar en TecnoCitasCDA.</p>
+            ";
+
+            self::enviarCorreoRevision($email, $nombre, $asunto, $html);
+        }
+
+
     }
+
 
     // GET /api/revision/ver?id=#
     public static function verRevision()
@@ -177,6 +255,75 @@ class RevisionController
         } catch (\Exception $e) {
             http_response_code(500);
             echo json_encode(['ok' => false, 'message' => 'Error al listar revisiones', 'error' => $e->getMessage()]);
+        }
+    }
+
+
+    public static function listarParametros()
+    {
+        verificarRolesPermitidosPorID([1, 3]); // admin y técnico
+
+        try {
+            $db = conectarDB();
+
+            $query = "
+                SELECT 
+                    id,
+                    nombre_parametro,
+                    descripcion,
+                    categoria,
+                    estado
+                FROM parametro_inspeccion
+                ORDER BY categoria ASC, nombre_parametro ASC
+            ";
+
+            $stmt = $db->query($query);
+            $parametros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode(['ok' => true, 'parametros' => $parametros]);
+
+        } catch (\Exception $e) {
+            echo json_encode([
+                'ok' => false,
+                'message' => 'Error al listar parámetros',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    private static function enviarCorreoRevision($email, $nombre, $asunto, $html)
+    {
+        error_log("📨 [enviarCorreoRevision] Preparando correo a $email");
+
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+
+        try {
+            // Cargar variables de entorno
+            cargarEnv(dirname(__DIR__, 2) . '/.env');
+
+            $mail->isSMTP();
+            $mail->Host = getenv('MAIL_HOST');
+            $mail->SMTPAuth = true;
+            $mail->Username = getenv('MAIL_USERNAME');
+            $mail->Password = getenv('MAIL_PASSWORD');
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = (int)getenv('MAIL_PORT') ?: 2525;
+
+            // Configurar correo
+            $mail->setFrom('no-reply@tecnocitascda.com', 'TecnoCitasCDA');
+            $mail->addAddress($email, $nombre);
+            $mail->isHTML(true);
+            $mail->Subject = $asunto;
+            $mail->Body = $html;
+
+            $mail->send();
+
+            error_log("✅ [enviarCorreoRevision] Correo enviado correctamente");
+            return true;
+
+        } catch (\PHPMailer\PHPMailer\Exception $e) {
+            error_log("❌ Error al enviar correo: " . $mail->ErrorInfo);
+            return false;
         }
     }
 

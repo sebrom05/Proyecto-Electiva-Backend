@@ -53,6 +53,7 @@ require_once BASE_PATH . '/routes/usuario.php';
 require_once BASE_PATH . '/routes/vehiculo.php';
 require_once BASE_PATH . '/routes/cita.php';
 require_once BASE_PATH . '/routes/revision.php';
+require_once BASE_PATH . '/routes/parametroInspec.php';
 
 
 // (Más adelante: vehiculoRoutes.php, revisionRoutes.php, etc.)
