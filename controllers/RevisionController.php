@@ -327,4 +327,117 @@ class RevisionController
         }
     }
 
+    public static function misRevisiones() {
+        $usuario = verificarSesionAPI(); // solo clientes logueados
+
+        $db = conectarDB();
+
+        $query = "
+            SELECT 
+                r.id AS id_revision,
+                r.fecha_inspeccion,
+                v.placa,
+                v.marca,
+                v.modelo,
+                d.resultado,
+                d.efectividad_numero,
+                CASE 
+                    WHEN d.resultado >= 3 THEN 'APROBADA'
+                    ELSE 'RECHAZADA'
+                END AS estado_revision
+            FROM revision r
+            JOIN detalle_inspeccion d ON r.id_detalle_inspeccion = d.id
+            JOIN cita c ON r.id_cita = c.id
+            JOIN vehiculo v ON c.id_vehiculo = v.id
+            WHERE v.id_usuario = :id
+            ORDER BY r.fecha_inspeccion DESC
+        ";
+
+        $stmt = $db->prepare($query);
+        $stmt->execute(['id' => $usuario['id']]);
+
+        $revisiones = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['ok' => true, 'revisiones' => $revisiones]);
+    }
+
+    public static function verRevisionCliente()
+    {
+        $usuario = verificarSesionAPI(); // cliente autenticado
+        if (!$usuario) {
+            echo json_encode(['ok' => false, 'message' => 'Sesión no válida']);
+            return;
+        }
+
+        $idRevision = $_GET['id_revision'] ?? null;
+
+        if (!$idRevision) {
+            echo json_encode(['ok' => false, 'message' => 'ID de revisión requerido']);
+            return;
+        }
+
+        $db = conectarDB();
+
+        // 🔍 Validar que la revisión pertenece al cliente
+        $query = "
+            SELECT 
+                r.id AS id_revision,
+                r.fecha_inspeccion,
+                r.id_detalle_inspeccion,
+                d.resultado,
+                d.observaciones,
+                d.recomendaciones,
+                d.efectividad_numero,
+                v.placa,
+                v.marca,
+                v.modelo,
+                u.nombre,
+                u.apellido
+            FROM revision r
+            JOIN detalle_inspeccion d ON r.id_detalle_inspeccion = d.id
+            JOIN cita c ON r.id_cita = c.id
+            JOIN vehiculo v ON c.id_vehiculo = v.id
+            JOIN usuario u ON v.id_usuario = u.id
+            WHERE r.id = :idRevision AND v.id_usuario = :idUsuario
+        ";
+
+        $stmt = $db->prepare($query);
+        $stmt->execute([
+            ':idRevision' => $idRevision,
+            ':idUsuario' => $usuario['id']
+        ]);
+
+        $revision = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$revision) {
+            echo json_encode(['ok' => false, 'message' => 'Esta revisión no pertenece al usuario']);
+            return;
+        }
+
+        // 🔍 Traer parámetros evaluados
+        $parametrosQuery = "
+            SELECT 
+                p.nombre_parametro,
+                p.categoria,
+                dp.valor_medicion,
+                dp.resultado_parametro
+            FROM detalle_parametro_inspeccion dp
+            JOIN parametro_inspeccion p ON dp.id_parametro_inspeccion = p.id
+            JOIN detalle_inspeccion di ON dp.id_detalle_inspeccion = di.id
+            WHERE di.id = :idDetalle
+        ";
+
+        $stmt2 = $db->prepare($parametrosQuery);
+        $stmt2->execute([':idDetalle' => $revision['id_detalle_inspeccion']]);
+        $parametros = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+        // Adjuntar parámetros al resultado
+        $revision['parametros'] = $parametros;
+
+        echo json_encode(['ok' => true, 'revision' => $revision]);
+    }
+
+
+
+
 }
