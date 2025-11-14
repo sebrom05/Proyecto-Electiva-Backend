@@ -1,7 +1,7 @@
 # Archivos sensibles
 .env
 *.env
-cors.php
+
 
 # Dependencias
 /node_modules/
