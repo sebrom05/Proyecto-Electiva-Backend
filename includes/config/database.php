@@ -29,10 +29,12 @@ function conectarDB()
     $usuario    = getenv('DB_USER');
     $contrasena = getenv('DB_PASS');
     $dbname     = getenv('DB_NAME');
+    $puerto = $_ENV['DB_PORT'] ?? getenv('DB_PORT');
+
 
 
     try {
-        $conexion = new PDO("pgsql:host=$servidor;dbname=$dbname", $usuario, $contrasena);
+        $conexion = new PDO("pgsql:host=$servidor;port=$puerto;dbname=$dbname", $usuario, $contrasena);
         $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $conexion->exec("SET search_path TO public;");
         return $conexion;
