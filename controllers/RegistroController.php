@@ -242,7 +242,7 @@ class RegistroController
             return;
         }
 
-        // Eliminar el usuario temporal después de verificar
+        // Eliminar el usuario temporal después de verificarrrrr
         $delete = $db->prepare("DELETE FROM usuario_temporal WHERE email = :email");
         $delete->execute(['email' => $email]);
 
