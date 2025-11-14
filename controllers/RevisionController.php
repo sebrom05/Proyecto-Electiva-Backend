@@ -363,7 +363,7 @@ class RevisionController
 
     public static function verRevisionCliente()
     {
-        $usuario = verificarSesionAPI(); // cliente autenticado
+        $usuario = verificarSesionAPI(); // cliente autenticadooo
         if (!$usuario) {
             echo json_encode(['ok' => false, 'message' => 'Sesión no válida']);
             return;
