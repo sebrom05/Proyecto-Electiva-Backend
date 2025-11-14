@@ -25,10 +25,11 @@ function conectarDB()
     // Cargar las variables de entorno
     cargarEnv(dirname(__DIR__, 2) . '/.env');
 
-    $servidor   = $_ENV['DB_HOST'];
-    $usuario    = $_ENV['DB_USER'];
-    $contrasena = $_ENV['DB_PASS'];
-    $dbname     = $_ENV['DB_NAME'];
+    $servidor   = getenv('DB_HOST');
+    $usuario    = getenv('DB_USER');
+    $contrasena = getenv('DB_PASS');
+    $dbname     = getenv('DB_NAME');
+
 
     try {
         $conexion = new PDO("pgsql:host=$servidor;dbname=$dbname", $usuario, $contrasena);
