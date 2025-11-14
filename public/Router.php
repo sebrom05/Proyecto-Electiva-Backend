@@ -2,14 +2,14 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once __DIR__ . '/includes/app.php';
+require_once __DIR__ . '../includes/app.php';
 define('BASE_PATH', __DIR__);
 
 use Controllers\AuthController;
 use Controllers\UsuarioController;
 
 // Configuración CORS y cabecera JSON global.....
-require_once BASE_PATH . '/includes/cors.php';
+require_once BASE_PATH . '../includes/cors.php';
 
 
 // Detectar método y ruta
@@ -47,14 +47,14 @@ if (preg_match('#^/imagenes/(.+)$#', $uri, $matches)) {
 }
 
 // Incluir módulos de rutas
-require_once BASE_PATH . '/routes/auth.php';
-require_once BASE_PATH . '/routes/registro.php';
-require_once BASE_PATH . '/routes/usuario.php';
-require_once BASE_PATH . '/routes/vehiculo.php';
-require_once BASE_PATH . '/routes/cita.php';
-require_once BASE_PATH . '/routes/revision.php';
-require_once BASE_PATH . '/routes/parametroInspec.php';
-require_once BASE_PATH . '/routes/calificacion.php';
+require_once BASE_PATH . './routes/auth.php';
+require_once BASE_PATH . './routes/registro.php';
+require_once BASE_PATH . './routes/usuario.php';
+require_once BASE_PATH . './routes/vehiculo.php';
+require_once BASE_PATH . './routes/cita.php';
+require_once BASE_PATH . './routes/revision.php';
+require_once BASE_PATH . './routes/parametroInspec.php';
+require_once BASE_PATH . './routes/calificacion.php';
 
 
 // (Más adelante: vehiculoRoutes.php, revisionRoutes.php, etc.)
