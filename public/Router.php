@@ -8,7 +8,7 @@ define('BASE_PATH', __DIR__);
 use Controllers\AuthController;
 use Controllers\UsuarioController;
 
-// Configuración CORS y cabecera JSON global
+// Configuración CORS y cabecera JSON global.....
 require_once BASE_PATH . '/includes/cors.php';
 
 
