@@ -24,17 +24,13 @@ function conectarDB()
 {
     // Cargar las variables de entorno
     cargarEnv(dirname(__DIR__, 2) . '/.env');
-    error_log("🔍 DB_HOST: " . ($_ENV['DB_HOST'] ?? 'NO'));
-    error_log("🔍 DB_NAME: " . ($_ENV['DB_NAME'] ?? 'NO'));
-    error_log("🔍 DB_USER: " . ($_ENV['DB_USER'] ?? 'NO'));
-    error_log("🔍 DB_PORT: " . ($_ENV['DB_PORT'] ?? 'NO'));
-    error_log("🔍 DB_PASS: " . ($_ENV['DB_PASS'] ?? 'NO'));
 
-    $servidor   = $_ENV['DB_HOST'];
-    $usuario    = $_ENV['DB_USER'];
-    $contrasena = $_ENV['DB_PASS'];
-    $dbname     = $_ENV['DB_NAME'];
-    $puerto = $_ENV['DB_PORT'];
+    $servidor   = getenv('DB_HOST');
+    $usuario    = getenv('DB_USER');
+    $contrasena = getenv('DB_PASS');
+    $dbname     = getenv('DB_NAME');
+    $puerto = $_ENV['DB_PORT'] ?? getenv('DB_PORT');
+
 
     try {
         $conexion = new PDO("pgsql:host=$servidor;port=$puerto;dbname=$dbname", $usuario, $contrasena);

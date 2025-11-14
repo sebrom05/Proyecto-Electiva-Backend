@@ -4,7 +4,6 @@
 cors.php
 
 # Dependencias
-/vendor/
 /node_modules/
 
 # Archivos temporales o de logs
