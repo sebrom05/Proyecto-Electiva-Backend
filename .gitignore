@@ -1,7 +1,7 @@
 # Archivos sensibles
 .env
 *.env
-/vendor/
+vendor
 
 # Dependencias
 /node_modules/
