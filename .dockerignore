@@ -1,0 +1,18 @@
+# Carpetas que no deben entrar en la imagen
+vendor
+node_modules
+imagenes
+.git
+.gitignore
+
+# Archivos de composer innecesarios
+composer.lock
+
+# Archivos de entorno sensibles
+.env
+
+# Archivos de sistema
+*.log
+*.md
+.DS_Store
+.vscode/
