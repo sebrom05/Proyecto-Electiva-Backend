@@ -24,8 +24,8 @@ RUN composer install --no-interaction --prefer-dist --ignore-platform-req=ext-pg
 RUN chown -R www-data:www-data /var/www/html
 
 # Exponer el puerto (tu backend usa el servidor embebido)
-EXPOSE 3000
+EXPOSE 80
 
 
 # Comando de inicio (el mismo que usas local)
-CMD ["php", "-S", "0.0.0.0:3000", "Router.php"]
+CMD ["php", "-S", "0.0.0.0:80", "Router.php"]
