@@ -21,7 +21,7 @@ session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
     'domain' => '',       // IMPORTANTE: vacío si usas una IP
-    'secure' => false,    // true si usas HTTPS
+    'secure' => true,    // true si usas HTTPS
     'httponly' => true,
     'samesite' => 'None'  // REQUERIDO para cookies cross-site
 ]);
