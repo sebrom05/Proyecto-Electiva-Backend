@@ -14,8 +14,7 @@ require_once BASE_PATH . '/includes/cors.php';
 
 // Detectar método y ruta
 $method = $_SERVER['REQUEST_METHOD'];
-$uri = strtok($_SERVER['REQUEST_URI'], '?') ?? '/';
-
+$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // 🔹 Ya NO elimines /public, porque estás corriendo desde Router.php
 $uri = $requestUri;
