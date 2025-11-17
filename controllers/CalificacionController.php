@@ -15,7 +15,6 @@ class CalificacionController
     // 🔹 GET /api/calificaciones/estadisticas  (solo admin / técnico)
     public static function estadisticasAdmin()
     {
-        require_once __DIR__ . '/../includes/cors.php';
 
         // ✅ Solo admin (1) y técnico (3)
         verificarRolesPermitidosPorID([1, 3]);

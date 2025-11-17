@@ -1,11 +1,12 @@
 <?php
+
+require_once __DIR__ . '/cors.php';
 // ==============================
 // 🔹 FUNCIONES GLOBALES
 // ==============================
 
 // Verifica si el usuario está autenticado
 function verificarSesionAPI() {
-    session_start();
 
     if (!isset($_SESSION['login']) || !$_SESSION['login']) {
         http_response_code(401);
@@ -37,7 +38,6 @@ function s($html): string {
 // 🔹 Validar sesión y rol de administrador
 // ==============================
 function verificarAdmin() {
-    session_start();
 
     if (!isset($_SESSION['login']) || !$_SESSION['login']) {
         http_response_code(401);
@@ -54,7 +54,6 @@ function verificarAdmin() {
 
 //Verificar Roles permitidos
 function verificarRolesPermitidosPorID(array $rolesPermitidos) {
-    session_start();
     error_log("🧩 Verificando roles - Sesión actual: " . json_encode($_SESSION ?? []));
 
     // 1️⃣ Verificar sesión activa

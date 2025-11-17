@@ -1,6 +1,7 @@
 <?php
 namespace Controllers;
 
+require_once __DIR__ . '/../includes/cors.php';
 use Model\Usuario; 
 
 use PDO;

@@ -3,10 +3,17 @@
 // 🔹 CONFIGURACIÓN GLOBAL DE CORS (con soporte para sesiones PHP)
 // ==============================
 
-$frontend = 'https://tecno-citas.vercel.app';
+$allowed_origins = [
+    "http://localhost:5173",
+    "https://tecno-citas.vercel.app",
+    "https://tecno-citas-4wxl5hfjw-sebastians-projects-c674c50a.vercel.app"
+];
 
-// Cabeceras principales
-header("Access-Control-Allow-Origin: $frontend");
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");

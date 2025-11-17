@@ -1,6 +1,10 @@
 <?php
 namespace Controllers;
 
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../includes/config/database.php';
+require_once __DIR__ . '/../includes/cors.php';
+
 use Model\Cita;
 use PDO;
 use Exception;
@@ -157,8 +161,6 @@ class CitaController {
     {
         error_log("🚀 [enviarAvisoCita] Iniciando envío de correo...");
         error_log("🧾 ID Vehículo: $idVehiculo, Fecha: $fecha, Hora: $hora");
-        require_once __DIR__ . '/../vendor/autoload.php';
-        require_once __DIR__ . '/../includes/config/database.php';
 
         $db = conectarDB();
 
@@ -370,8 +372,7 @@ class CitaController {
 
     private static function enviarAvisoCambioEstado(int $idCita): array
     {
-        require_once __DIR__ . '/../vendor/autoload.php';
-        require_once __DIR__ . '/../includes/config/database.php';
+        
 
         try {
             $db = conectarDB();
@@ -460,7 +461,6 @@ class CitaController {
     public static function listarCitasPorUsuario()
     {
         verificarRolesPermitidosPorID([2]); // cliente
-        session_start();
         $idUsuario = $_SESSION['usuario']['id'] ?? null;
         if (!$idUsuario) {
             http_response_code(401);

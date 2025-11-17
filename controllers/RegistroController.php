@@ -6,6 +6,7 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../includes/config/database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../includes/cors.php';
 
 class RegistroController
 {
@@ -13,17 +14,6 @@ class RegistroController
     public static function registroApi()
     {
         error_log("🟢 Paso 1: Entró a registroApi()");
-
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type');
-
-        //Manekar CORS preflight request
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
-            exit;
-        }
 
         // 🔹 Validar método HTTP
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -160,16 +150,6 @@ class RegistroController
 
     public static function verificarCodigoApi()
     {
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type');
-
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(200);
-            exit;
-        }
-
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             echo json_encode(['ok' => false, 'message' => 'Método no permitido']);

@@ -1,6 +1,8 @@
 <?php
 namespace Controllers;
 
+require_once __DIR__ . '/../includes/cors.php';
+
 use PDO;
 use Exception;
 
@@ -437,9 +439,7 @@ class VehiculoController
 
     public static function listarVehiculosPorUsuario()
     {
-        // Cualquier usuario autenticado (sin verificar rol específico)
-        require_once __DIR__ . '/../includes/cors.php';
-        session_start();
+
 
         if (!isset($_SESSION['usuario']) || empty($_SESSION['usuario']['id'])) {
             http_response_code(401);
@@ -489,8 +489,6 @@ class VehiculoController
     // ==========================================
     public static function crearVehiculoCliente()
     {
-        require_once __DIR__ . '/../includes/cors.php';
-        session_start();
 
         error_log("🚗 [crearVehiculoCliente] --- INICIO ---");
 

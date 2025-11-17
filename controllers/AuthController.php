@@ -14,7 +14,6 @@ class AuthController
     public static function loginApi()
     {
         require_once __DIR__ . '/../includes/cors.php';
-        session_start();
 
         // Inicializamos arreglo de errores
         $errores = [];
@@ -94,7 +93,6 @@ class AuthController
     public static function verificarSesionApi()
     {
         require_once __DIR__ . '/../includes/cors.php';
-        session_start();
 
         // ✅ Si existe sesión activa, devolvemos los datos del usuario
         if (isset($_SESSION['usuario']) && !empty($_SESSION['usuario']['autenticado'])) {
@@ -116,7 +114,6 @@ class AuthController
     public static function logoutApi()
     {
         require_once __DIR__ . '/../includes/cors.php';
-        session_start();
 
         // 🔹 Limpia la sesión
         $_SESSION = [];
