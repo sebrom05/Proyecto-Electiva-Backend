@@ -3,7 +3,7 @@
 // 🔹 CONFIGURACIÓN GLOBAL DE CORS (con soporte para sesiones PHP)
 // ==============================
 
-$frontend = 'http://localhost:5173';
+$frontend = 'https://tecno-citas-git-sebastian-sebastians-projects-c674c50a.vercel.app';
 
 // Cabeceras principales
 header("Access-Control-Allow-Origin: $frontend");
