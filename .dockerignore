@@ -1,7 +1,6 @@
 # Carpetas que no deben entrar en la imagen
 vendor
 node_modules
-imagenes
 .git
 .gitignore
 
