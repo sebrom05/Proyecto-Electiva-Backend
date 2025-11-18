@@ -8,11 +8,6 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-//Cargar cors
-require_once dirname(__DIR__) . '/includes/cors.php';
-
-//Cargar funciones globales (NO cargan CORS)
-require_once dirname(__DIR__) . '/includes/funciones.php';
 
 // Ruta al archivo Router.php
 $routerPath = dirname(__DIR__) . '/Router.php';
