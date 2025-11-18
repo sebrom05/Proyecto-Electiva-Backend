@@ -33,8 +33,10 @@ session_set_cookie_params([
     'samesite' => 'None'  // REQUERIDO para cookies cross-site
 ]);
 
-session_start();
-
+// Iniciar sesión UNA SOLA VEZ
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Preflight (OPTIONS)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

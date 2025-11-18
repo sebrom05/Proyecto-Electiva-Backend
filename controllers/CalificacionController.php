@@ -4,7 +4,6 @@ namespace Controllers;
 use PDO;
 use Exception;
 
-require_once __DIR__ . '/../includes/cors.php';
 require_once __DIR__ . '/../includes/config/database.php';
 require_once __DIR__ . '/../includes/funciones.php';
 

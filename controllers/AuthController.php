@@ -13,7 +13,6 @@ class AuthController
 {
     public static function loginApi()
     {
-        require_once __DIR__ . '/../includes/cors.php';
 
         // Inicializamos arreglo de errores
         $errores = [];
@@ -92,7 +91,6 @@ class AuthController
 
     public static function verificarSesionApi()
     {
-        require_once __DIR__ . '/../includes/cors.php';
 
         // ✅ Si existe sesión activa, devolvemos los datos del usuario
         if (isset($_SESSION['usuario']) && !empty($_SESSION['usuario']['autenticado'])) {
@@ -113,7 +111,6 @@ class AuthController
 
     public static function logoutApi()
     {
-        require_once __DIR__ . '/../includes/cors.php';
 
         // 🔹 Limpia la sesión
         $_SESSION = [];
@@ -141,7 +138,6 @@ class AuthController
     }
 
     public static function recuperarContrasena() {
-        require_once __DIR__.'/../includes/cors.php';
         error_log("🟦 Iniciando recuperarContrasena()");
 
         $input = json_decode(file_get_contents('php://input'), true);
@@ -214,7 +210,6 @@ class AuthController
     }
 
     public static function verificarRecuperacion() {
-        require_once __DIR__.'/../includes/cors.php';
         error_log("🟦 Iniciando verificarRecuperacion()");
 
         $input = json_decode(file_get_contents('php://input'), true);
@@ -238,7 +233,6 @@ class AuthController
     }
 
     public static function cambiarContrasena() {
-        require_once __DIR__.'/../includes/cors.php';
         error_log("🟦 Iniciando cambiarContrasena()");
 
         $input = json_decode(file_get_contents('php://input'), true);

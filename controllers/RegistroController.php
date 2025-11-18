@@ -6,7 +6,6 @@ use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../includes/config/database.php';
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../includes/cors.php';
 
 class RegistroController
 {
