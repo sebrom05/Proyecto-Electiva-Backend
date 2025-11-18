@@ -65,23 +65,32 @@ class CitaController {
     // POST /api/citas/crear
    public static function crearCita()
     {
+
+        error_log("🟦 [crearCita] Iniciando método");
+
         $usuario = verificarSesionAPI();
+        error_log("🟩 [crearCita] Usuario autenticado: " . json_encode($usuario));
         $db = conectarDB();
+        error_log("🟩 [crearCita] Conexion correcta");
 
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            error_log("❌ [crearCita] Metodo no POST");
             http_response_code(405);
             echo json_encode(['ok' => false, 'message' => 'Método no permitido']);
             exit;
         }
+        error_log("🟩 [crearCita] Metodo es POST");
 
         $input = json_decode(file_get_contents('php://input'), true);
+        error_log("🟩 [crearCita] JSON recibido: " . json_encode($input));
 
         if (empty($input['id_vehiculo']) || empty($input['fecha']) || empty($input['hora'])) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'message' => 'Faltan datos requeridos']);
             exit;
         }
+        error_log("🟩 [crearCita] JSON procesado: " . json_encode($input));
         /*
         --------------------------------------------------------------------
         🔹 VALIDACIÓN DE INTERVALOS DE MEDIA HORA (AQUÍ VA EL CÓDIGO)
@@ -90,9 +99,11 @@ class CitaController {
 
         // Validar que la hora esté en intervalos de 30 minutos
         $hora = $input['hora'];
+        error_log("🕒 [crearCita] Validando hora: $hora");
         $partes = explode(':', $hora);
 
         if (count($partes) !== 2) {
+            error_log("❌ [crearCita] Formato de hora inválido");
             echo json_encode(['ok' => false, 'message' => 'Formato de hora inválido']);
             exit;
         }
@@ -100,12 +111,15 @@ class CitaController {
         $minutos = (int)$partes[1];
 
         if ($minutos !== 0 && $minutos !== 30) {
+            error_log("❌ [crearCita] Hora no válida (no es 00 o 30): $hora");
             echo json_encode([
                 'ok' => false,
                 'message' => 'Solo se permiten citas cada 30 minutos (00 o 30 minutos).'
             ]);
             exit;
         }
+
+        error_log("🔎 [crearCita] Verificando cita duplicada en BD...");
         // 1. Comprobar si ya existe una cita en CONFIRMADA en la misma fecha y hora
         $check = $db->prepare("
             SELECT id FROM cita 
@@ -120,22 +134,27 @@ class CitaController {
         ]);
 
         if ($check->fetch()) {
+            error_log("❌ [crearCita] Horario ya reservado");
             echo json_encode([
                 'ok' => false,
                 'message' => 'Ya existe una cita confirmada en ese horario. Elija otro.'
             ]);
             exit;
         }
+        error_log("🟩 [crearCita] Horario disponible");
 
 
         try {
+            error_log("🛠️ [crearCita] Creando modelo Cita...");
             $cita = new Cita([
                 'id_vehiculo' => (int)$input['id_vehiculo'],
                 'id_estado_cita' => 1, // Pendiente
                 'fecha' => $input['fecha'],
                 'hora'  => $input['hora']
             ]);
+            error_log("🟩 [crearCita] Modelo Cita creado: " . json_encode($cita));
 
+            error_log("💾 [crearCita] Guardando cita en BD...");
             if ($cita->guardar()) {
                 error_log("📧 Llamando a enviarAvisoCita...");
                 // Enviar correo (no afecta si falla)
